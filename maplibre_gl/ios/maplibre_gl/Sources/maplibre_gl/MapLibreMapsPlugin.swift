@@ -102,9 +102,10 @@ public class MapLibreMapsPlugin: NSObject, FlutterPlugin {
                     //Boolean offline = (Boolean) methodCall.argument("offline");
                     //ConnectivityReceiver.instance(context).setConnected(offline!=null ? !(offline) : null);
                     //result.success(null);
-                    guard let arguments = methodCall.arguments as? [Bool: Any],
-                                          let offline = arguments["offline"] as? Bool
-                                          return
+                    guard let arguments = methodCall.arguments as? [String: Any],
+                          let offline = arguments["offline"] as? Bool else {
+                        return
+                    }
                    // MLNNetworkConfiguration.
             case "getListOfRegions":
                 // Note: this does not download anything from internet, it only fetches data drom database
