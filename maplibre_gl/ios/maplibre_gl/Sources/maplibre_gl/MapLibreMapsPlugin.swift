@@ -109,6 +109,13 @@ public class MapLibreMapsPlugin: NSObject, FlutterPlugin {
                     return
                 }
                 OfflineManagerUtils.deleteRegion(result: result, id: id)
+            case "setOffline":
+                guard let arguments = methodCall.arguments as? [Bool: Any],
+                                      let offline = arguments["offline"] as? Bool
+                guard let arguments = methodCall.arguments as? [String: Any],
+                       let offline = arguments["offline"] as? Bool else {
+                   return
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
