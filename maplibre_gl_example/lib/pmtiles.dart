@@ -6,24 +6,24 @@ import 'package:maplibre_gl_example/page.dart';
 
 const _nullIsland = CameraPosition(target: LatLng(0, 0), zoom: 4.0);
 
-class FullMapPage extends ExamplePage {
-  const FullMapPage({super.key})
-      : super(const Icon(Icons.map), 'Full screen map');
+class PMTilesPage extends ExamplePage {
+  const PMTilesPage({super.key})
+      : super(const Icon(Icons.map), 'PMTiles example');
 
   @override
   Widget build(BuildContext context) {
-    return const FullMap();
+    return const PMTilesMap();
   }
 }
 
-class FullMap extends StatefulWidget {
-  const FullMap({super.key});
+class PMTilesMap extends StatefulWidget {
+  const PMTilesMap({super.key});
 
   @override
-  State createState() => FullMapState();
+  State createState() => PMTilesMapState();
 }
 
-class FullMapState extends State<FullMap> {
+class PMTilesMapState extends State<PMTilesMap> {
   final Completer<MapLibreMapController> mapController = Completer();
   bool canInteractWithMap = false;
 
@@ -43,6 +43,7 @@ class FullMapState extends State<FullMap> {
         onMapCreated: (controller) => mapController.complete(controller),
         initialCameraPosition: _nullIsland,
         onStyleLoadedCallback: () => setState(() => canInteractWithMap = true),
+        styleString: 'assets/pmtiles_style.json',
       ),
     );
   }

@@ -15,8 +15,8 @@ typedef MaplibreMap = MapLibreMap;
 /// Also refer to the documentation of [maplibre_gl] and [MapLibreMapController].
 class MapLibreMap extends StatefulWidget {
   const MapLibreMap({
-    super.key,
     required this.initialCameraPosition,
+    super.key,
     this.styleString = MapLibreStyles.demo,
     this.onMapCreated,
     this.onStyleLoadedCallback,
@@ -41,6 +41,7 @@ class MapLibreMap extends StatefulWidget {
     this.attributionButtonPosition = AttributionButtonPosition.bottomRight,
     this.attributionButtonMargins,
     this.iosLongClickDuration,
+    this.webPreserveDrawingBuffer = false,
     this.onMapClick,
     this.onUserLocationUpdated,
     this.onMapLongClick,
@@ -63,10 +64,16 @@ class MapLibreMap extends StatefulWidget {
   })  : assert(
           myLocationRenderMode == MyLocationRenderMode.normal ||
               myLocationEnabled,
-          "$myLocationRenderMode requires [myLocationEnabled] set to true.",
+          '$myLocationRenderMode requires [myLocationEnabled] set to true.',
         ),
-        assert(annotationOrder.length <= 4),
-        assert(annotationConsumeTapEvents.length > 0);
+        assert(
+          annotationOrder.length <= 4,
+          'annotationOrder must not have more than 4 items',
+        ),
+        assert(
+          annotationConsumeTapEvents.length > 0,
+          'annotationConsumeTapEvents must not be empty',
+        );
 
   /// The properties for the platform-specific location engine.
   /// Only has an impact if [myLocationEnabled] is set to true.
@@ -99,6 +106,11 @@ class MapLibreMap extends StatefulWidget {
   /// Has no effect on web or Android. Can not be changed at runtime, only the initial value is used.
   /// If null, the default value of the native MapLibre library / of the OS is used.
   final Duration? iosLongClickDuration;
+
+  /// If true, the map's canvas can be exported to a PNG using map.getCanvas().toDataURL().
+  /// This is false by default as a performance optimization.
+  /// **Web only** - has no effect on other platforms.
+  final bool? webPreserveDrawingBuffer;
 
   /// True if the map should show a compass when rotated.
   final bool compassEnabled;
@@ -264,8 +276,9 @@ class _MapLibreMapState extends State<MapLibreMap> {
   @override
   Widget build(BuildContext context) {
     assert(
-        widget.annotationOrder.toSet().length == widget.annotationOrder.length,
-        "annotationOrder must not have duplicate types");
+      widget.annotationOrder.toSet().length == widget.annotationOrder.length,
+      'annotationOrder must not have duplicate types',
+    );
     final creationParams = <String, dynamic>{
       'initialCameraPosition': widget.initialCameraPosition.toMap(),
       'styleString': widget.styleString,
@@ -274,9 +287,14 @@ class _MapLibreMapState extends State<MapLibreMap> {
       if (widget.iosLongClickDuration != null)
         'iosLongClickDurationMilliseconds':
             widget.iosLongClickDuration!.inMilliseconds,
+      if (widget.webPreserveDrawingBuffer != null)
+        'webPreserveDrawingBuffer': widget.webPreserveDrawingBuffer,
     };
     return _maplibrePlatform.buildView(
-        creationParams, onPlatformViewCreated, widget.gestureRecognizers);
+      creationParams,
+      onPlatformViewCreated,
+      widget.gestureRecognizers,
+    );
   }
 
   @override
@@ -308,7 +326,7 @@ class _MapLibreMapState extends State<MapLibreMap> {
       return;
     }
     final controller = await _controller.future;
-    controller._updateMapOptions(updates);
+    await controller._updateMapOptions(updates);
   }
 
   Future<void> onPlatformViewCreated(int id) async {
@@ -343,26 +361,27 @@ class _MapLibreMapState extends State<MapLibreMap> {
 /// When used to change configuration, null values will be interpreted as
 /// "do not change this configuration option".
 class _MapLibreMapOptions {
-  _MapLibreMapOptions(
-      {this.compassEnabled,
-      this.cameraTargetBounds,
-      this.styleString,
-      this.minMaxZoomPreference,
-      required this.rotateGesturesEnabled,
-      required this.scrollGesturesEnabled,
-      required this.tiltGesturesEnabled,
-      required this.zoomGesturesEnabled,
-      required this.doubleClickZoomEnabled,
-      this.trackCameraPosition,
-      this.myLocationEnabled,
-      this.myLocationTrackingMode,
-      this.myLocationRenderMode,
-      this.logoViewMargins,
-      this.compassViewPosition,
-      this.compassViewMargins,
-      this.attributionButtonPosition,
-      this.attributionButtonMargins,
-      this.locationEnginePlatforms});
+  _MapLibreMapOptions({
+    required this.rotateGesturesEnabled,
+    required this.scrollGesturesEnabled,
+    required this.tiltGesturesEnabled,
+    required this.zoomGesturesEnabled,
+    required this.doubleClickZoomEnabled,
+    this.compassEnabled,
+    this.cameraTargetBounds,
+    this.styleString,
+    this.minMaxZoomPreference,
+    this.trackCameraPosition,
+    this.myLocationEnabled,
+    this.myLocationTrackingMode,
+    this.myLocationRenderMode,
+    this.logoViewMargins,
+    this.compassViewPosition,
+    this.compassViewMargins,
+    this.attributionButtonPosition,
+    this.attributionButtonMargins,
+    this.locationEnginePlatforms,
+  });
 
   _MapLibreMapOptions.fromWidget(MapLibreMap map)
       : this(
@@ -431,7 +450,7 @@ class _MapLibreMapOptions {
     'scrollGesturesEnabled',
     'tiltGesturesEnabled',
     'zoomGesturesEnabled',
-    'doubleClickZoomEnabled'
+    'doubleClickZoomEnabled',
   };
 
   Map<String, dynamic> toMap() {
@@ -471,7 +490,9 @@ class _MapLibreMapOptions {
     addIfNonNull('compassViewMargins', pointToArray(compassViewMargins));
     addIfNonNull('attributionButtonPosition', attributionButtonPosition?.index);
     addIfNonNull(
-        'attributionButtonMargins', pointToArray(attributionButtonMargins));
+      'attributionButtonMargins',
+      pointToArray(attributionButtonMargins),
+    );
     addIfNonNull('locationEngineProperties', locationEnginePlatforms?.toList());
     return optionsMap;
   }
