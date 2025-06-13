@@ -60,6 +60,7 @@ final List<ExamplePage> _allPages = <ExamplePage>[
   const GetMapInfoPage(),
   const NoLocationPermissionPage(),
   const AttributionPage(),
+  const GpsLocationPage(),
 ];
 
 class MapsDemo extends StatefulWidget {
