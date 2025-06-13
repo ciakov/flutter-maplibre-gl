@@ -6,6 +6,7 @@ class MapLibreMapController extends MapLibrePlatform
 
   late Map<String, dynamic> _creationParams;
   late MapLibreMap _map;
+  bool _mapReady = false;
   dynamic _draggedFeatureId;
   LatLng? _dragOrigin;
   LatLng? _dragPrevious;
@@ -45,15 +46,18 @@ class MapLibreMapController extends MapLibrePlatform
   void _registerViewFactory(void Function(int) callback, int identifier) {
     // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
-        'plugins.flutter.io/maplibre_gl_$identifier', (int viewId) {
-      _mapElement = html.DivElement()
-        ..style.position = 'absolute'
-        ..style.top = '0'
-        ..style.bottom = '0'
-        ..style.width = '100%';
-      callback(viewId);
-      return _mapElement;
-    });
+      'plugins.flutter.io/maplibre_gl_$identifier',
+      (int viewId) {
+        _mapElement =
+            html.DivElement()
+              ..style.position = 'absolute'
+              ..style.top = '0'
+              ..style.bottom = '0'
+              ..style.width = '100%';
+        callback(viewId);
+        return _mapElement;
+      },
+    );
   }
 
   @override
@@ -123,8 +127,10 @@ class MapLibreMapController extends MapLibrePlatform
       _dragOrigin = LatLng(coords.lat as double, coords.lng as double);
 
       if (_draggedFeatureId != null) {
-        final current =
-            LatLng(e.lngLat.lat.toDouble(), e.lngLat.lng.toDouble());
+        final current = LatLng(
+          e.lngLat.lat.toDouble(),
+          e.lngLat.lng.toDouble(),
+        );
         final payload = {
           'id': _draggedFeatureId,
           'point': Point<double>(e.point.x.toDouble(), e.point.y.toDouble()),
@@ -318,13 +324,10 @@ class MapLibreMapController extends MapLibrePlatform
       options['filter'] = filter;
     }
     return _map
-        .queryRenderedFeatures(
-          [
-            [rect.left, rect.bottom],
-            [rect.right, rect.top],
-          ],
-          options,
-        )
+        .queryRenderedFeatures([
+          [rect.left, rect.bottom],
+          [rect.right, rect.top],
+        ], options)
         .map(
           (feature) => {
             'type': 'Feature',
@@ -443,6 +446,7 @@ class MapLibreMapController extends MapLibrePlatform
   }
 
   void _onStyleLoaded(_) {
+    _mapReady = true;
     final loaded = _map.isStyleLoaded();
     if (!loaded) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -615,9 +619,7 @@ class MapLibreMapController extends MapLibrePlatform
     }
   }
 
-  void _updateAttributionButton(
-    AttributionButtonPosition position,
-  ) {
+  void _updateAttributionButton(AttributionButtonPosition position) {
     String? positionString;
     switch (position) {
       case AttributionButtonPosition.topRight:
@@ -657,14 +659,8 @@ class MapLibreMapController extends MapLibrePlatform
     } else {
       _map.setMaxBounds(
         LngLatBounds(
-          LngLat(
-            bounds.southwest.longitude,
-            bounds.southwest.latitude,
-          ),
-          LngLat(
-            bounds.northeast.longitude,
-            bounds.northeast.latitude,
-          ),
+          LngLat(bounds.southwest.longitude, bounds.southwest.latitude),
+          LngLat(bounds.northeast.longitude, bounds.northeast.latitude),
         ),
       );
     }
@@ -755,15 +751,17 @@ class MapLibreMapController extends MapLibrePlatform
 
   @override
   Future<LatLng> toLatLng(Point<num> screenLocation) async {
-    final lngLat =
-        _map.unproject(geo_point.Point(screenLocation.x, screenLocation.y));
+    final lngLat = _map.unproject(
+      geo_point.Point(screenLocation.x, screenLocation.y),
+    );
     return LatLng(lngLat.lat as double, lngLat.lng as double);
   }
 
   @override
   Future<Point> toScreenLocation(LatLng latLng) async {
-    final screenPosition =
-        _map.project(LngLat(latLng.longitude, latLng.latitude));
+    final screenPosition = _map.project(
+      LngLat(latLng.longitude, latLng.latitude),
+    );
     final point = Point(screenPosition.x.round(), screenPosition.y.round());
 
     return point;
@@ -773,11 +771,14 @@ class MapLibreMapController extends MapLibrePlatform
   Future<List<Point<num>>> toScreenLocationBatch(
     Iterable<LatLng> latLngs,
   ) async {
-    return latLngs.map((latLng) {
-      final screenPosition =
-          _map.project(LngLat(latLng.longitude, latLng.latitude));
-      return Point(screenPosition.x.round(), screenPosition.y.round());
-    }).toList(growable: false);
+    return latLngs
+        .map((latLng) {
+          final screenPosition = _map.project(
+            LngLat(latLng.longitude, latLng.latitude),
+          );
+          return Point(screenPosition.x.round(), screenPosition.y.round());
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -850,10 +851,9 @@ class MapLibreMapController extends MapLibrePlatform
     required double east,
     required int padding,
   }) async {
-    _map.fitBounds(
-      LngLatBounds(LngLat(west, south), LngLat(east, north)),
-      {'padding': padding},
-    );
+    _map.fitBounds(LngLatBounds(LngLat(west, south), LngLat(east, north)), {
+      'padding': padding,
+    });
   }
 
   @override
@@ -971,14 +971,16 @@ class MapLibreMapController extends MapLibrePlatform
       try {
         _map.setLayoutProperty(layerId, entry.key, entry.value);
       } on Exception catch (e) {
-        html.window.console
-            .log('Caught exception (usually safe to ignore): $e');
+        html.window.console.log(
+          'Caught exception (usually safe to ignore): $e',
+        );
       }
       try {
         _map.setPaintProperty(layerId, entry.key, entry.value);
       } on Exception catch (e) {
-        html.window.console
-            .log('Caught exception (usually safe to ignore): $e');
+        html.window.console.log(
+          'Caught exception (usually safe to ignore): $e',
+        );
       }
     }
   }
@@ -1097,20 +1099,17 @@ class MapLibreMapController extends MapLibrePlatform
       properties.entries.where((entry) => !isLayoutProperty(entry.key)),
     );
 
-    _map.addLayer(
-      {
-        'id': layerId,
-        'type': layerType,
-        'source': sourceId,
-        'layout': layout,
-        'paint': paint,
-        if (sourceLayer != null) 'source-layer': sourceLayer,
-        if (minzoom != null) 'minzoom': minzoom,
-        if (maxzoom != null) 'maxzoom': maxzoom,
-        if (filter != null) 'filter': filter,
-      },
-      belowLayerId,
-    );
+    _map.addLayer({
+      'id': layerId,
+      'type': layerType,
+      'source': sourceId,
+      'layout': layout,
+      'paint': paint,
+      if (sourceLayer != null) 'source-layer': sourceLayer,
+      if (minzoom != null) 'minzoom': minzoom,
+      if (maxzoom != null) 'maxzoom': maxzoom,
+      if (filter != null) 'filter': filter,
+    }, belowLayerId);
 
     if (enableInteraction) {
       _interactiveFeatureLayerIds.add(layerId);
