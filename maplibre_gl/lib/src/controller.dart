@@ -4,40 +4,37 @@
 
 part of '../maplibre_gl.dart';
 
-typedef OnMapClickCallback = void Function(
-  Point<double> point,
-  LatLng coordinates,
-);
+typedef OnMapClickCallback =
+    void Function(Point<double> point, LatLng coordinates);
 
-typedef OnFeatureInteractionCallback = void Function(
-  dynamic id,
-  Point<double> point,
-  LatLng coordinates,
-  String layerId,
-);
+typedef OnFeatureInteractionCallback =
+    void Function(
+      dynamic id,
+      Point<double> point,
+      LatLng coordinates,
+      String layerId,
+    );
 
-typedef OnFeatureDragnCallback = void Function(
-  dynamic id, {
-  required Point<double> point,
-  required LatLng origin,
-  required LatLng current,
-  required LatLng delta,
-  required DragEventType eventType,
-});
+typedef OnFeatureDragnCallback =
+    void Function(
+      dynamic id, {
+      required Point<double> point,
+      required LatLng origin,
+      required LatLng current,
+      required LatLng delta,
+      required DragEventType eventType,
+    });
 
-typedef OnMapLongClickCallback = void Function(
-  Point<double> point,
-  LatLng coordinates,
-);
+typedef OnMapLongClickCallback =
+    void Function(Point<double> point, LatLng coordinates);
 
 typedef OnStyleLoadedCallback = void Function();
 
 typedef OnUserLocationUpdated = void Function(UserLocation location);
 
 typedef OnCameraTrackingDismissedCallback = void Function();
-typedef OnCameraTrackingChangedCallback = void Function(
-  MyLocationTrackingMode mode,
-);
+typedef OnCameraTrackingChangedCallback =
+    void Function(MyLocationTrackingMode mode);
 
 typedef OnCameraIdleCallback = void Function();
 
@@ -102,21 +99,23 @@ class MapLibreMapController extends ChangeNotifier {
     _cameraPosition = initialCameraPosition;
 
     _maplibrePlatform.onFeatureTappedPlatform.add((payload) {
-      for (final fun
-          in List<OnFeatureInteractionCallback>.from(onFeatureTapped)) {
+      for (final fun in List<OnFeatureInteractionCallback>.from(
+        onFeatureTapped,
+      )) {
         fun(
           payload['id'],
           payload['point'],
           payload['latLng'],
-          payload['layerId'],
+          payload.containsKey('layerId') ? payload['layerId'] : '',
         );
       }
     });
 
     _maplibrePlatform.onFeatureDraggedPlatform.add((payload) {
       for (final fun in List<OnFeatureDragnCallback>.from(onFeatureDrag)) {
-        final enmDragEventType = DragEventType.values
-            .firstWhere((element) => element.name == payload['eventType']);
+        final enmDragEventType = DragEventType.values.firstWhere(
+          (element) => element.name == payload['eventType'],
+        );
         fun(
           payload['id'],
           point: payload['point'],
@@ -727,8 +726,9 @@ class MapLibreMapController extends ChangeNotifier {
   Future<void> updateMyLocationTrackingMode(
     MyLocationTrackingMode myLocationTrackingMode,
   ) async {
-    return _maplibrePlatform
-        .updateMyLocationTrackingMode(myLocationTrackingMode);
+    return _maplibrePlatform.updateMyLocationTrackingMode(
+      myLocationTrackingMode,
+    );
   }
 
   /// Updates the language of the map labels to match the device's language.
@@ -843,8 +843,9 @@ class MapLibreMapController extends ChangeNotifier {
   ///
   /// The returned [Future] completes once listeners have been notified.
   Future<void> updateSymbol(Symbol symbol, SymbolOptions changes) async {
-    await symbolManager!
-        .set(symbol..options = symbol.options.copyWith(changes));
+    await symbolManager!.set(
+      symbol..options = symbol.options.copyWith(changes),
+    );
 
     notifyListeners();
   }
